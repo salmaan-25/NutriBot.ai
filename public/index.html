@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>NutriBot — AI Meal Planner</title>
+
+    <!-- Tailwind (kept) + Inter font -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap" rel="stylesheet">
+
+    <!-- Updated stylesheet -->
+    <link rel="stylesheet" href="style.css">
+</head>
+<body class="app-root">
+
+    <!-- Main layout: left sidebar + content -->
+    <div class="layout">
+
+        <!-- LEFT SIDEBAR -->
+        <aside class="sidebar" aria-label="Quick actions & features">
+            <div class="sidebar-inner">
+                <div class="brand-row">
+                    <img src="NutriBott.png" alt="NutriBot logo" class="logo-img" />
+                    <div class="brand-text">
+                        <h2>Nutri-Bot</h2>
+                        <p class="tagline">AI Nutrition & Meal Planning</p>
+                    </div>
+                </div>
+
+                <nav class="quick-actions" aria-label="Quick actions">
+                    <h3 class="section-title">Quick Actions</h3>
+                    <button class="qa-btn">Weight Loss Plan</button>
+                    <button class="qa-btn">Muscle Gain Plan</button>
+                    <button class="qa-btn">Balanced Diet</button>
+                    <button class="qa-btn">Best Foods</button>
+                </nav>
+
+                <div class="features">
+                    <h4 class="f-title">Features</h4>
+                    <ul>
+                        <li><span class="dot ok"></span> Diet Plans</li>
+                        <li><span class="dot ok"></span> Food Nutrients</li>
+                        <li><span class="dot ok"></span> 7-day Plans</li>
+                    </ul>
+                </div>
+
+                <div class="sidebar-footer">
+                    <small>Made with care❤️ — NutriBot</small>
+                </div>
+            </div>
+        </aside>
+
+        <!-- MAIN CONTENT (chat) -->
+        <main class="main-col" role="main">
+            <header class="topbar">
+                <div class="topbar-inner">
+                    <h1 class="site-title">Nutri-Bot</h1>
+                    <p class="site-sub">Your Personal Nutrition & Meal Planning AI Assistant</p>
+                    <div class="status">
+                        <span class="status-dot"></span>
+                        <span class="status-text">Online</span>
+                    </div>
+                </div>
+            </header>
+
+            <section id="chat-window" class="chat-window" aria-live="polite" aria-atomic="false">
+                <!-- existing initial greeting bubble preserved in DOM by server or HTML below -->
+                <div class="message-row bot">
+                    <div class="message-bubble bot-message p-4 rounded-xl shadow-md">
+                        <div class="meta">
+                            <div class="avatar">NB</div>
+                            <div class="meta-text">
+                                <div class="name">NutriBot</div>
+                                <div class="time">just now</div>
+                            </div>
+                        </div>
+                        <div class="content mt-2">
+                            <p class="greeting-title">Hi! I'm NutriBot 👋</p>
+                            <p>I can plan meals, estimate macros, and suggest healthy recipes. Try: <em>"7-day meal plan for weight loss"</em> or <em>"How much protein in 100g of black beans?"</em></p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Typing placeholder (script toggles .hidden) -->
+                <div id="typing-placeholder" class="message-row bot hidden" aria-hidden="true">
+                    <div class="message-bubble bot-message skeleton p-4 rounded-xl shadow-md animate-pulse">
+                        <div class="meta">
+                            <div class="avatar">NB</div>
+                            <div class="meta-text"><div class="name">NutriBot</div><div class="time">thinking…</div></div>
+                        </div>
+                        <div class="content mt-3">
+                            <div class="skeleton-lines">
+                                <div class="line short"></div>
+                                <div class="line medium"></div>
+                                <div class="line long"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Input area (footer) -->
+            <footer class="composer" aria-label="Message composer">
+                <div class="composer-inner">
+                    <label for="user-input" class="sr-only">Type your message</label>
+                    <input type="text" id="user-input" placeholder="Ask about meal plans, calories, nutrition..." autocomplete="off" spellcheck="false" />
+                    <button id="send-button" onclick="sendMessage()" class="send-btn" aria-label="Send message">
+                        <span id="send-text">Send</span>
+                        <svg id="loading-spinner" class="spinner hidden" viewBox="0 0 24 24" aria-hidden="true">
+                            <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2" fill="none" opacity="0.2"></circle>
+                            <path fill="currentColor" d="M4 12a8 8 0 018-8V0C5.37 0 0 5.37 0 12h4z"></path>
+                        </svg>
+                    </button>
+                </div>
+            </footer>
+        </main>
+
+    </div>
+
+    <!-- UI enhancement script (keeps same augmentation and handlers) -->
+    <script>
+        (function () {
+            const chatWindow = document.getElementById('chat-window');
+            const typingPlaceholder = document.getElementById('typing-placeholder');
+            const loadingSpinner = document.getElementById('loading-spinner');
+
+            const spinnerObserver = new MutationObserver(() => {
+                const showing = !loadingSpinner.classList.contains('hidden') && loadingSpinner.offsetParent !== null;
+                typingPlaceholder.classList.toggle('hidden', !showing);
+                if (showing) chatWindow.scrollTop = chatWindow.scrollHeight + 200;
+            });
+            spinnerObserver.observe(loadingSpinner, { attributes: true, attributeFilter: ['class', 'style'] });
+
+            const mo = new MutationObserver((mutations) => {
+                for (const m of mutations) {
+                    for (const node of m.addedNodes) {
+                        if (!(node instanceof HTMLElement)) continue;
+                        const bots = node.matches && node.matches('.bot-message') ? [node] : Array.from(node.querySelectorAll('.bot-message'));
+                        for (const b of bots) {
+                            if (b.classList.contains('skeleton')) continue;
+                            augmentBotMessage(b);
+                        }
+                    }
+                }
+            });
+            mo.observe(chatWindow, { childList: true, subtree: true });
+
+            function augmentBotMessage(bubble) {
+                if (bubble.dataset.enhanced === '1') return;
+                bubble.dataset.enhanced = '1';
+                if (!bubble.querySelector('.meta')) {
+                    const meta = document.createElement('div');
+                    meta.className = 'meta';
+                    meta.innerHTML = '<div class="avatar">NB</div><div class="meta-text"><div class="name">NutriBot</div><div class="time">now</div></div>';
+                    bubble.prepend(meta);
+                }
+                const actions = document.createElement('div');
+                actions.className = 'msg-actions';
+                actions.innerHTML = `
+                    <button class="action-btn react" title="Helpful">👍</button>
+                    <button class="action-btn react" title="Not helpful">👎</button>
+                    <button class="action-btn copy" title="Copy response">📋</button>
+                `;
+                bubble.appendChild(actions);
+            }
+
+            document.addEventListener('click', (e) => {
+                const btn = e.target.closest('.action-btn');
+                if (!btn) return;
+                const bubble = btn.closest('.message-bubble');
+                if (!bubble) return;
+                if (btn.classList.contains('copy')) {
+                    const text = bubble.innerText || bubble.textContent;
+                    navigator.clipboard?.writeText(text.replace(/(?:\r\n|\r|\n)/g, '\n')).then(() => {
+                        btn.classList.add('copied');
+                        btn.textContent = '✅';
+                        setTimeout(() => { btn.classList.remove('copied'); btn.textContent = '📋'; }, 1200);
+                    }).catch(() => {
+                        alert('Copy failed — please select and copy manually.');
+                    });
+                } else if (btn.classList.contains('react')) {
+                    btn.classList.toggle('reacted');
+                    btn.animate([{ transform: 'scale(1)' }, { transform: 'scale(1.15)' }, { transform: 'scale(1)' }], { duration: 220 });
+                }
+            });
+
+            document.addEventListener('DOMContentLoaded', () => {
+                Array.from(document.querySelectorAll('.bot-message')).forEach(b => {
+                    if (!b.classList.contains('skeleton')) augmentBotMessage(b);
+                });
+            });
+        })();
+    </script>
+
+    <!-- Original external JS (unchanged) -->
+    <script src="script.js"></script>
+</body>
+</html>
