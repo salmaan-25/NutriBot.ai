@@ -5,7 +5,7 @@ const cors = require('cors');
 const { GoogleGenAI } = require('@google/genai');
 
 const app = express();
-const port = 3000; // Server will run on http://localhost:3000
+const port = process.env.PORT || 3000; // Use Render's provided port when deployed
 
 // --- Configuration ---
 
@@ -28,7 +28,7 @@ Use the Google Search tool to ensure all facts, recommended foods, and dietary g
 
 // --- Middleware ---
 
-// Enable CORS for frontend running on a different port/origin (e.g., index.html opened directly)
+// Enable CORS for frontend running on a different port/origin
 app.use(cors()); 
 // Parse JSON request bodies
 app.use(express.json()); 
@@ -89,6 +89,5 @@ app.post('/api/chat', async (req, res) => {
 // --- Server Start ---
 
 app.listen(port, () => {
-    console.log(`Server listening at http://localhost:${port}`);
-    console.log(`Frontend accessible via the 'index.html' file (or http://localhost:${port}/index.html)`);
+    console.log(`Server listening at port ${port}`);
 });
