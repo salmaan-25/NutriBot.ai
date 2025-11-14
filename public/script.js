@@ -1,5 +1,6 @@
 // --- Configuration ---
-const CHAT_API_ENDPOINT = 'http://localhost:3000/api/chat';
+// Updated to point at your deployed backend on Render:
+const CHAT_API_ENDPOINT = 'https://nutribot-ai-ckue.onrender.com/api/chat';
 const MAX_RETRIES = 5;
 
 // In-memory chat history (transferred to the server for each request)
@@ -45,7 +46,7 @@ function displayMessage(text, isUser, sources = []) {
         const sourceContainer = document.createElement('div');
         sourceContainer.className = 'text-xs text-gray-500 mt-1 max-w-sm ml-10'; // Added margin for alignment
         const links = sources.map((s, index) =>
-            `<a href="${s.uri}" target="_blank" class="hover:underline text-emerald-600 block" title="${s.title}">Source ${index + 1}: ${s.title}</a>`
+            `<a href="${s.uri}" target="_blank" rel="noopener noreferrer" class="hover:underline text-emerald-600 block" title="${s.title}">Source ${index + 1}: ${s.title}</a>`
         ).join('');
         sourceContainer.innerHTML = 'Grounded Sources:<br>' + links;
         messageWrapper.appendChild(sourceContainer);
@@ -73,8 +74,9 @@ window.sendMessage = async function() {
     inputElement.value = '';
     inputElement.disabled = true;
     sendButton.disabled = true;
-    sendButton.querySelector('#send-text').classList.add('hidden');
-    loadingSpinner.classList.remove('hidden');
+    const sendTextElem = sendButton.querySelector('#send-text');
+    if (sendTextElem) sendTextElem.classList.add('hidden');
+    if (loadingSpinner) loadingSpinner.classList.remove('hidden');
 
     // 2. Add user message to history
     chatHistory.push({ role: "user", parts: [{ text: userQuery }] });
@@ -97,14 +99,14 @@ window.sendMessage = async function() {
 
     } catch (error) {
         console.error("Error communicating with Node.js server:", error);
-        // Fallback message for user
-        displayMessage("An error occurred while communicating with the server. Please check if the Node.js server is running (http://localhost:3000).", false);
+        // Friendlier message for production (no localhost mention)
+        displayMessage("An error occurred while communicating with the server. Please try again in a moment.", false);
     } finally {
         // 6. Restore UI state
         inputElement.disabled = false;
         sendButton.disabled = false;
-        sendButton.querySelector('#send-text').classList.remove('hidden');
-        loadingSpinner.classList.add('hidden');
+        if (sendTextElem) sendTextElem.classList.remove('hidden');
+        if (loadingSpinner) loadingSpinner.classList.add('hidden');
         inputElement.focus();
     }
 }
@@ -113,7 +115,11 @@ window.sendMessage = async function() {
 
 document.addEventListener('DOMContentLoaded', () => {
     // Initial check for enabling the send button (in case text is pre-filled, though unlikely)
-    document.getElementById('send-button').disabled = document.getElementById('user-input').value.trim() === '';
+    const sendBtn = document.getElementById('send-button');
+    const userInput = document.getElementById('user-input');
+    if (sendBtn && userInput) {
+        sendBtn.disabled = userInput.value.trim() === '';
+    }
 
     // Enable button when input has text
     document.getElementById('user-input').addEventListener('input', (e) => {
